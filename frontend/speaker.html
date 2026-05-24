@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vaani — Speaker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080c14; --surface: #0f1624; --border: #1e2d45;
+    --accent: #3b82f6; --accent2: #06b6d4; --red: #ef4444;
+    --text: #e2e8f0; --muted: #64748b; --success: #10b981;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 10% 5%, rgba(59,130,246,.1) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 90% 90%, rgba(6,182,212,.07) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ─── Header ─── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(15,22,36,.8); backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .logo-sm { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; display: flex; align-items: center; gap: .4rem; }
+  .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg,var(--accent),var(--accent2)); border-radius: 8px; display: grid; place-items: center; font-size: .9rem; }
+
+  .header-right { display: flex; align-items: center; gap: 1rem; }
+
+  .room-badge {
+    display: flex; align-items: center; gap: .5rem;
+    background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.3);
+    border-radius: 8px; padding: .4rem .9rem;
+    font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 1.1rem;
+    letter-spacing: .15em; color: var(--accent);
+    cursor: pointer; transition: background .2s;
+  }
+  .room-badge:hover { background: rgba(59,130,246,.2); }
+  .room-badge .copy-icon { font-size: .8rem; opacity: .6; }
+
+  .listeners-pill {
+    display: flex; align-items: center; gap: .4rem;
+    background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.2);
+    border-radius: 20px; padding: .35rem .85rem;
+    font-size: .8rem; color: var(--success);
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  /* ─── Main ─── */
+  main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 3rem 1.5rem; gap: 2rem; }
+
+  /* ─── Mic ─── */
+  .mic-section { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+
+  .mic-btn {
+    width: 140px; height: 140px; border-radius: 50%;
+    border: none; cursor: pointer;
+    background: radial-gradient(circle at 35% 35%, #1e3a5f, #0f1624);
+    border: 2px solid var(--border);
+    color: var(--text); font-size: 3.5rem;
+    display: grid; place-items: center;
+    transition: all .3s; position: relative;
+    box-shadow: 0 0 0 0 rgba(59,130,246,0);
+  }
+  .mic-btn:hover { transform: scale(1.04); border-color: var(--accent); }
+  .mic-btn.recording {
+    background: radial-gradient(circle at 35% 35%, #7f1d1d, #450a0a);
+    border-color: var(--red);
+    box-shadow: 0 0 0 12px rgba(239,68,68,.12), 0 0 0 24px rgba(239,68,68,.05);
+    animation: mic-pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes mic-pulse {
+    0%,100% { box-shadow: 0 0 0 12px rgba(239,68,68,.12), 0 0 0 24px rgba(239,68,68,.05); }
+    50%      { box-shadow: 0 0 0 18px rgba(239,68,68,.18), 0 0 0 36px rgba(239,68,68,.08); }
+  }
+
+  .mic-label { font-size: .85rem; color: var(--muted); font-weight: 500; letter-spacing: .04em; }
+  .mic-label.active { color: var(--red); }
+
+  .status-row { display: flex; align-items: center; gap: .5rem; font-size: .85rem; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .status-dot.live { background: var(--red); animation: pulse 1s infinite; }
+  .status-dot.ready { background: var(--success); }
+
+  /* ─── Controls ─── */
+  .controls { display: flex; gap: .75rem; flex-wrap: wrap; justify-content: center; }
+  .ctrl-select {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: .6rem 1rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: .875rem;
+    outline: none; cursor: pointer; transition: border-color .2s; appearance: none;
+    padding-right: 2rem;
+  }
+  .ctrl-select:focus { border-color: var(--accent); }
+
+  /* ─── Transcript Feed ─── */
+  .feed-section { width: 100%; max-width: 720px; }
+  .feed-title {
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: .8rem;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+    margin-bottom: .75rem;
+  }
+  .feed {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.25rem; min-height: 200px; max-height: 320px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: .75rem;
+  }
+  .feed:empty::after { content: 'Transcript will appear here...'; color: var(--muted); font-size: .875rem; }
+
+  .feed-item { display: flex; flex-direction: column; gap: .3rem; animation: fadeUp .3s ease; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+  .feed-original {
+    font-size: .9rem; color: var(--text); line-height: 1.5;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .feed-meta { font-size: .75rem; color: var(--muted); display: flex; align-items: center; gap: .5rem; }
+  .feed-tag {
+    background: rgba(59,130,246,.12); color: var(--accent);
+    border-radius: 4px; padding: .1rem .4rem; font-size: .7rem; font-weight: 600;
+  }
+
+  .separator { width: 100%; height: 1px; background: var(--border); }
+
+  /* ─── Toast ─── */
+  #toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(4rem);
+    background: var(--success); color: #fff; padding: .6rem 1.25rem; border-radius: 8px;
+    font-size: .8rem; font-weight: 600; transition: transform .25s; z-index: 999;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* scrollbar */
+  .feed::-webkit-scrollbar { width: 4px; }
+  .feed::-webkit-scrollbar-track { background: transparent; }
+  .feed::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <a href="/" class="logo-sm" style="text-decoration:none;color:inherit;">
+      <span class="logo-icon">🌐</span> Vaani
+    </a>
+    <div class="header-right">
+      <div class="room-badge" onclick="copyCode()" title="Click to copy">
+        <span id="roomCodeDisplay">------</span>
+        <span class="copy-icon">⎘</span>
+      </div>
+      <div class="listeners-pill">
+        <span class="dot"></span>
+        <span id="listenerCount">0</span> listening
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="mic-section">
+      <button class="mic-btn" id="micBtn" onclick="toggleRecording()">🎙️</button>
+      <div class="mic-label" id="micLabel">Tap to go live</div>
+      <div class="status-row">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText" style="color:var(--muted)">Not connected</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <select class="ctrl-select" id="langSelect" onchange="changeLang()">
+        <option value="hi-IN">🗣️ Hindi</option>
+        <option value="en-IN" selected>🗣️ English</option>
+        <option value="ta-IN">🗣️ Tamil</option>
+        <option value="te-IN">🗣️ Telugu</option>
+        <option value="kn-IN">🗣️ Kannada</option>
+        <option value="bn-IN">🗣️ Bengali</option>
+        <option value="mr-IN">🗣️ Marathi</option>
+        <option value="gu-IN">🗣️ Gujarati</option>
+      </select>
+    </div>
+
+    <div class="feed-section">
+      <div class="feed-title">📝 Live Transcript</div>
+      <div class="feed" id="feed"></div>
+    </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const params  = new URLSearchParams(window.location.search);
+  const roomId  = params.get('room') || '';
+  const initLang = params.get('lang') || 'en-IN';
+
+  document.getElementById('roomCodeDisplay').textContent = roomId;
+  document.getElementById('langSelect').value = initLang;
+
+  const WS_BASE = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
+
+  let ws = null;
+  let mediaRecorder = null;
+  let isRecording = false;
+  let currentLang = initLang;
+  let listenerPollInterval = null;
+
+  // ── WebSocket ──
+  function connectWS() {
+    ws = new WebSocket(`${WS_BASE}/ws/speaker/${roomId}`);
+    ws.binaryType = 'arraybuffer';
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ language: currentLang }));
+    };
+
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'ready') {
+        setStatus('ready', 'Connected — ready to broadcast');
+      } else if (msg.type === 'pong') {
+        // keepalive ack
+      }
+    };
+
+    ws.onclose = () => {
+      setStatus('', 'Disconnected');
+      stopRecording();
+    };
+
+    ws.onerror = () => setStatus('', 'Connection error');
+  }
+
+  // ── Recording ──
+  async function toggleRecording() {
+    if (isRecording) { stopRecording(); return; }
+    await startRecording();
+  }
+
+  async function startRecording() {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+        video: false
+      });
+      connectWS();
+
+      // Wait for WS to open
+      await new Promise(res => {
+        if (ws.readyState === 1) { res(); return; }
+        ws.addEventListener('open', res, { once: true });
+      });
+
+      const options = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+        ? { mimeType: 'audio/webm;codecs=opus' }
+        : {};
+
+      mediaRecorder = new MediaRecorder(stream, options);
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0 && ws && ws.readyState === 1) {
+          ws.send(e.data);
+        }
+      };
+
+      // Emit short, self-contained chunks to keep latency low without overwhelming STT.
+      mediaRecorder.start(1500);
+
+      isRecording = true;
+      document.getElementById('micBtn').classList.add('recording');
+      document.getElementById('micBtn').textContent = '⏹';
+      document.getElementById('micLabel').textContent = 'Recording... tap to stop';
+      document.getElementById('micLabel').classList.add('active');
+      document.getElementById('statusDot').classList.add('live');
+      document.getElementById('statusText').textContent = 'LIVE';
+      document.getElementById('statusText').style.color = 'var(--red)';
+
+      // Poll listener count every 5s
+      listenerPollInterval = setInterval(pollListeners, 5000);
+
+    } catch (err) {
+      showToast('Microphone access denied');
+      console.error(err);
+    }
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+      mediaRecorder.stop();
+      mediaRecorder.stream.getTracks().forEach(t => t.stop());
+    }
+    if (ws) { ws.close(); ws = null; }
+    clearInterval(listenerPollInterval);
+
+    isRecording = false;
+    document.getElementById('micBtn').classList.remove('recording');
+    document.getElementById('micBtn').textContent = '🎙️';
+    document.getElementById('micLabel').textContent = 'Tap to go live';
+    document.getElementById('micLabel').classList.remove('active');
+    document.getElementById('statusDot').classList.remove('live');
+    document.getElementById('statusText').textContent = 'Stopped';
+    document.getElementById('statusText').style.color = 'var(--muted)';
+  }
+
+  function changeLang() {
+    currentLang = document.getElementById('langSelect').value;
+    if (isRecording) {
+      stopRecording();
+      setTimeout(startRecording, 500);
+    }
+  }
+
+  // ── Transcript Feed ──
+  // Listen for transcripts via a second WS or via server-sent events.
+  // Simple approach: speaker sees their own text via a listener WS in parallel
+  const speakerListenerId = 'speaker-preview-' + Math.random().toString(36).slice(2);
+  let previewWs = null;
+
+  function connectPreview() {
+    // We join our own room as a hidden listener to receive transcript echoes
+    previewWs = new WebSocket(`${WS_BASE}/ws/listener/${roomId}/${speakerListenerId}`);
+    previewWs.onopen = () => {
+      previewWs.send(JSON.stringify({ language: currentLang }));
+    };
+    previewWs.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'translation') {
+        addFeedItem(msg.original, msg.translated, msg.target_lang);
+      }
+    };
+  }
+
+  // Connect preview on load so transcript shows even before recording
+  connectPreview();
+
+  function addFeedItem(original, translated, lang) {
+    const feed = document.getElementById('feed');
+    const item = document.createElement('div');
+    item.className = 'feed-item';
+    item.innerHTML = `
+      <div class="feed-original">${escHtml(original)}</div>
+      <div class="feed-meta">
+        <span class="feed-tag">${lang}</span>
+        <span>${escHtml(translated)}</span>
+        <span style="margin-left:auto">${new Date().toLocaleTimeString()}</span>
+      </div>
+    `;
+    feed.appendChild(item);
+    feed.scrollTop = feed.scrollHeight;
+
+    // Trim to last 50 items
+    while (feed.children.length > 50) feed.removeChild(feed.firstChild);
+  }
+
+  // ── Listeners count ──
+  async function pollListeners() {
+    try {
+      const r = await fetch(`/api/room/${roomId}/info`);
+      const d = await r.json();
+      document.getElementById('listenerCount').textContent = d.listener_count || 0;
+    } catch {}
+  }
+  pollListeners();
+
+  // ── Helpers ──
+  function setStatus(type, text) {
+    const dot = document.getElementById('statusDot');
+    const txt = document.getElementById('statusText');
+    dot.className = 'status-dot' + (type ? ' ' + type : '');
+    txt.textContent = text;
+    txt.style.color = type === 'ready' ? 'var(--success)' : 'var(--muted)';
+  }
+
+  function copyCode() {
+    navigator.clipboard.writeText(roomId).then(() => showToast('Room code copied!'));
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Share link helper ──
+  const shareUrl = `${location.origin}/listener?room=${roomId}`;
+</script>
+</body>
+</html>

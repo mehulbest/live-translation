@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vaani — Listener</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080c14; --surface: #0f1624; --border: #1e2d45;
+    --accent: #06b6d4; --accent2: #3b82f6; --text: #e2e8f0;
+    --muted: #64748b; --success: #10b981; --warn: #f59e0b;
+  }
+
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; }
+
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 80% 10%, rgba(6,182,212,.09) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 20% 90%, rgba(59,130,246,.07) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* ─── Header ─── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.25rem 2rem; border-bottom: 1px solid var(--border);
+    background: rgba(15,22,36,.8); backdrop-filter: blur(12px);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .logo-sm { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 1.3rem; display: flex; align-items: center; gap: .4rem; text-decoration: none; color: inherit; }
+  .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg,var(--accent2),var(--accent)); border-radius: 8px; display: grid; place-items: center; font-size: .9rem; }
+
+  .room-badge {
+    background: rgba(6,182,212,.1); border: 1px solid rgba(6,182,212,.3);
+    border-radius: 8px; padding: .4rem .9rem;
+    font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 1rem;
+    letter-spacing: .15em; color: var(--accent);
+  }
+
+  .live-pill {
+    display: flex; align-items: center; gap: .4rem;
+    border-radius: 20px; padding: .35rem .85rem;
+    font-size: .8rem; font-weight: 600;
+    background: rgba(100,116,139,.08); border: 1px solid rgba(100,116,139,.2);
+    color: var(--muted);
+    transition: all .3s;
+  }
+  .live-pill.live { background: rgba(16,185,129,.08); border-color: rgba(16,185,129,.2); color: var(--success); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .dot.pulse { animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+  /* ─── Main ─── */
+  main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 2.5rem 1.5rem; gap: 2rem; }
+
+  /* ─── Language Selector ─── */
+  .lang-section { text-align: center; }
+  .lang-label { font-size: .75rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: .6rem; }
+  .lang-grid { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
+  .lang-chip {
+    padding: .45rem 1rem; border-radius: 20px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--muted); font-size: .8rem; font-weight: 500;
+    cursor: pointer; transition: all .2s;
+  }
+  .lang-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .lang-chip.active { border-color: var(--accent); background: rgba(6,182,212,.1); color: var(--accent); font-weight: 700; }
+
+  /* ─── Audio Visualizer ─── */
+  .visualizer-wrap { display: flex; flex-direction: column; align-items: center; gap: .75rem; }
+  .visualizer {
+    display: flex; align-items: center; gap: 3px;
+    height: 48px; padding: 0 .5rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; min-width: 180px;
+    justify-content: center;
+  }
+  .bar {
+    width: 4px; background: var(--accent);
+    border-radius: 2px; transition: height .15s ease;
+    opacity: .5;
+  }
+  .bar.playing { opacity: 1; animation: none; }
+  .viz-label { font-size: .75rem; color: var(--muted); }
+
+  /* ─── Translation Feed ─── */
+  .feed-section { width: 100%; max-width: 720px; }
+  .feed-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: .75rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: .75rem; }
+  .feed {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 1.25rem; min-height: 240px; max-height: 380px; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 1rem;
+  }
+  .feed-empty { color: var(--muted); font-size: .875rem; text-align: center; padding: 2rem 0; }
+
+  .bubble {
+    display: flex; flex-direction: column; gap: .35rem;
+    padding: 1rem 1.15rem;
+    background: rgba(255,255,255,.03); border-radius: 12px;
+    border-left: 3px solid var(--accent);
+    animation: slideIn .3s ease;
+  }
+  @keyframes slideIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  .bubble-translated { font-size: 1rem; line-height: 1.6; color: var(--text); font-weight: 500; }
+  .bubble-original { font-size: .78rem; color: var(--muted); line-height: 1.5; font-style: italic; }
+  .bubble-meta { display: flex; align-items: center; gap: .5rem; margin-top: .2rem; }
+  .bubble-tag { background: rgba(6,182,212,.12); color: var(--accent); border-radius: 4px; padding: .1rem .4rem; font-size: .65rem; font-weight: 700; letter-spacing: .06em; }
+  .bubble-time { font-size: .7rem; color: var(--muted); margin-left: auto; }
+
+  /* ─── Wait state ─── */
+  .waiting {
+    display: flex; flex-direction: column; align-items: center; gap: .75rem;
+    padding: 2.5rem 0;
+  }
+  .waiting-icon { font-size: 2.5rem; animation: float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  .waiting-text { color: var(--muted); font-size: .875rem; }
+
+  /* ─── Toast ─── */
+  #toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(4rem);
+    background: var(--success); color: #fff; padding: .6rem 1.25rem; border-radius: 8px;
+    font-size: .8rem; font-weight: 600; transition: transform .25s; z-index: 999;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  .feed::-webkit-scrollbar { width: 4px; }
+  .feed::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <a href="/" class="logo-sm"><span class="logo-icon">🌐</span> Vaani</a>
+    <div class="room-badge" id="roomDisplay">------</div>
+    <div class="live-pill" id="livePill">
+      <span class="dot" id="liveDot"></span>
+      <span id="liveText">Connecting...</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- Language chooser -->
+    <div class="lang-section">
+      <div class="lang-label">Listening in</div>
+      <div class="lang-grid" id="langGrid">
+        <div class="lang-chip active" data-lang="hi-IN" onclick="changeLang(this)">हिंदी</div>
+        <div class="lang-chip" data-lang="en-IN" onclick="changeLang(this)">English</div>
+        <div class="lang-chip" data-lang="ta-IN" onclick="changeLang(this)">தமிழ்</div>
+        <div class="lang-chip" data-lang="te-IN" onclick="changeLang(this)">తెలుగు</div>
+        <div class="lang-chip" data-lang="kn-IN" onclick="changeLang(this)">ಕನ್ನಡ</div>
+        <div class="lang-chip" data-lang="bn-IN" onclick="changeLang(this)">বাংলা</div>
+        <div class="lang-chip" data-lang="mr-IN" onclick="changeLang(this)">मराठी</div>
+        <div class="lang-chip" data-lang="gu-IN" onclick="changeLang(this)">ગુજરાતી</div>
+      </div>
+    </div>
+
+    <!-- Visualizer -->
+    <div class="visualizer-wrap">
+      <div class="visualizer" id="visualizer">
+        <div class="bar" style="height:10px"></div>
+        <div class="bar" style="height:18px"></div>
+        <div class="bar" style="height:14px"></div>
+        <div class="bar" style="height:24px"></div>
+        <div class="bar" style="height:16px"></div>
+        <div class="bar" style="height:10px"></div>
+        <div class="bar" style="height:20px"></div>
+        <div class="bar" style="height:12px"></div>
+        <div class="bar" style="height:18px"></div>
+        <div class="bar" style="height:10px"></div>
+      </div>
+      <div class="viz-label" id="vizLabel">Waiting for speaker...</div>
+    </div>
+
+    <!-- Translations -->
+    <div class="feed-section">
+      <div class="feed-title">🌐 Live Translations</div>
+      <div class="feed" id="feed">
+        <div class="waiting">
+          <div class="waiting-icon">🎧</div>
+          <div class="waiting-text">Waiting for the speaker to start...</div>
+        </div>
+      </div>
+    </div>
+    <!-- Audio unlock banner -->
+  <div id="audioUnlock" style="
+    position:fixed; bottom:0; left:0; right:0; z-index:50;
+    background: rgba(6,182,212,0.15); border-top: 1px solid rgba(6,182,212,0.3);
+    padding: 1rem; text-align: center; backdrop-filter: blur(8px);
+  ">
+    <button onclick="unlockAudio()" style="
+      background: var(--accent); color: #000; border: none; border-radius: 8px;
+      padding: .6rem 1.5rem; font-weight: 700; font-size: .9rem; cursor: pointer;
+    ">🔊 Tap to enable audio playback</button>
+  </div>
+  </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  const params   = new URLSearchParams(window.location.search);
+  const roomId   = params.get('room') || '';
+  const initLang = params.get('lang') || 'hi-IN';
+  const listenerId = 'l-' + Math.random().toString(36).slice(2, 10);
+
+  document.getElementById('roomDisplay').textContent = roomId;
+
+  // Activate initial lang chip
+  document.querySelectorAll('.lang-chip').forEach(c => {
+    c.classList.toggle('active', c.dataset.lang === initLang);
+  });
+
+  const WS_BASE = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}`;
+
+  let ws = null;
+  let currentLang = initLang;
+  let firstMessage = true;
+
+  // ── Audio Queue (sequential playback) ──
+  const audioQueue = [];
+  let audioPlaying = false;
+
+  function enqueueAudio(base64Wav) {
+    audioQueue.push(base64Wav);
+    if (!audioPlaying) playNext();
+  }
+
+    function playNext() {
+    if (audioQueue.length === 0) {
+      audioPlaying = false;
+      stopVisualizer();
+      return;
+    }
+    audioPlaying = true;
+    const b64 = audioQueue.shift();
+    const audio = new Audio(`data:audio/wav;base64,${b64}`);
+    startVisualizer();
+    document.getElementById('vizLabel').textContent = 'Playing translation...';
+    audio.onended = () => { playNext(); };
+    audio.onerror = () => { playNext(); };
+    audio.play().catch(() => {
+      audioPlaying = false;
+      stopVisualizer();
+      playNext();
+    });
+  }
+
+  // ADD this new function anywhere in the script block:
+  function unlockAudio() {
+    const silence = new Audio("data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=");
+    silence.play().then(() => {
+      document.getElementById('audioUnlock').style.display = 'none';
+      showToast('Audio enabled!');
+    }).catch(() => {});
+  }
+
+  // ── Visualizer animation ──
+  let vizInterval = null;
+  function startVisualizer() {
+    const bars = document.querySelectorAll('.bar');
+    clearInterval(vizInterval);
+    vizInterval = setInterval(() => {
+      bars.forEach(b => {
+        const h = Math.floor(Math.random() * 30) + 8;
+        b.style.height = h + 'px';
+        b.classList.add('playing');
+      });
+    }, 120);
+  }
+  function stopVisualizer() {
+    clearInterval(vizInterval);
+    const bars = document.querySelectorAll('.bar');
+    const heights = [10,18,14,24,16,10,20,12,18,10];
+    bars.forEach((b, i) => { b.style.height = heights[i] + 'px'; b.classList.remove('playing'); });
+    document.getElementById('vizLabel').textContent = 'Waiting for speaker...';
+  }
+
+  // ── WebSocket ──
+  function connect() {
+    ws = new WebSocket(`${WS_BASE}/ws/listener/${roomId}/${listenerId}`);
+
+    ws.onopen = () => {
+      ws.send(JSON.stringify({ language: currentLang }));
+    };
+
+    ws.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+
+        if (msg.type === 'connected') {
+            setLive(true);
+            showToast('Connected to room ' + roomId);
+        } else if (msg.type === 'translation') {
+            handleTranslation(msg);
+        } else if (msg.type === 'audio') {        // ← add this
+            if (msg.audio) enqueueAudio(msg.audio);
+        } else if (msg.type === 'language_changed') {
+            showToast('Language set to ' + msg.language);
+        }
+    };
+
+    ws.onclose = () => {
+      setLive(false);
+      setTimeout(connect, 3000); // auto-reconnect
+    };
+
+    ws.onerror = () => setLive(false);
+  }
+
+  function handleTranslation(msg) {
+      if (firstMessage) {
+        document.getElementById('feed').innerHTML = '';
+        firstMessage = false;
+      }
+      addBubble(msg.translated, msg.original, msg.target_lang);
+  }
+
+  
+  function addBubble(translated, original, lang) {
+    const feed = document.getElementById('feed');
+    const now = new Date().toLocaleTimeString();
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.innerHTML = `
+      <div class="bubble-translated">${escHtml(translated)}</div>
+      <div class="bubble-original">"${escHtml(original)}"</div>
+      <div class="bubble-meta">
+        <span class="bubble-tag">${lang}</span>
+        <span class="bubble-time">${now}</span>
+      </div>
+    `;
+    feed.appendChild(bubble);
+    feed.scrollTop = feed.scrollHeight;
+
+    // Keep last 40
+    while (feed.children.length > 40) feed.removeChild(feed.firstChild);
+  }
+
+  // ── Language change ──
+  function changeLang(chip) {
+    document.querySelectorAll('.lang-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    currentLang = chip.dataset.lang;
+
+    if (ws && ws.readyState === 1) {
+      ws.send(JSON.stringify({ type: 'change_language', language: currentLang }));
+    }
+  }
+
+  // ── UI helpers ──
+  function setLive(live) {
+    const pill = document.getElementById('livePill');
+    const dot  = document.getElementById('liveDot');
+    const txt  = document.getElementById('liveText');
+    pill.classList.toggle('live', live);
+    dot.classList.toggle('pulse', live);
+    txt.textContent = live ? 'Live' : 'Reconnecting...';
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function escHtml(str) {
+    return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  // ── Start ──
+  connect();
+
+  // Keepalive ping every 25s
+  setInterval(() => {
+    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'ping' }));
+  }, 25000);
+</script>
+</body>
+</html>

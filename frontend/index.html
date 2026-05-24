@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Vaani — Live Translation Platform</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #080c14;
+    --surface:  #0f1624;
+    --border:   #1e2d45;
+    --accent:   #3b82f6;
+    --accent2:  #06b6d4;
+    --gold:     #f59e0b;
+    --text:     #e2e8f0;
+    --muted:    #64748b;
+    --success:  #10b981;
+    --radius:   16px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    overflow: hidden;
+  }
+
+  /* animated mesh background */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 10%, rgba(59,130,246,.12) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 80% 80%, rgba(6,182,212,.08) 0%, transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .page { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
+
+  /* ─── Logo ─── */
+  .logo { text-align: center; margin-bottom: 3rem; }
+  .logo-mark {
+    display: inline-flex; align-items: center; gap: .6rem;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 2.2rem;
+    letter-spacing: -.02em;
+  }
+  .logo-icon {
+    width: 44px; height: 44px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 12px;
+    display: grid; place-items: center;
+    font-size: 1.4rem;
+  }
+  .logo-sub { margin-top: .4rem; color: var(--muted); font-size: .85rem; letter-spacing: .08em; text-transform: uppercase; }
+
+  /* ─── Cards ─── */
+  .cards { display: flex; gap: 1.5rem; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 860px; }
+
+  .card {
+    flex: 1; min-width: 300px; max-width: 400px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    position: relative; overflow: hidden;
+    transition: border-color .3s, transform .3s;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .card::before {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(59,130,246,.04) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .card-icon { font-size: 2rem; margin-bottom: 1rem; }
+  .card-title { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 1.25rem; margin-bottom: .4rem; }
+  .card-desc { color: var(--muted); font-size: .875rem; line-height: 1.6; margin-bottom: 1.5rem; }
+
+  /* ─── Inputs ─── */
+  .input-group { display: flex; flex-direction: column; gap: .75rem; }
+
+  select, input[type="text"] {
+    width: 100%;
+    background: rgba(255,255,255,.04);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: .75rem 1rem;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .9rem;
+    outline: none;
+    transition: border-color .2s;
+    appearance: none;
+  }
+  select:focus, input[type="text"]:focus { border-color: var(--accent); }
+  input[type="text"]::placeholder { color: var(--muted); }
+
+  /* custom select arrow */
+  .select-wrap { position: relative; }
+  .select-wrap::after {
+    content: '▾'; position: absolute; right: 1rem; top: 50%;
+    transform: translateY(-50%); color: var(--muted); pointer-events: none;
+  }
+
+  /* ─── Buttons ─── */
+  .btn {
+    width: 100%; padding: .85rem 1.5rem;
+    border: none; border-radius: 10px;
+    font-family: 'Syne', sans-serif; font-weight: 700; font-size: .95rem;
+    cursor: pointer; transition: all .2s;
+    letter-spacing: .02em;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #2563eb);
+    color: #fff;
+  }
+  .btn-primary:hover { opacity: .9; transform: translateY(-1px); box-shadow: 0 8px 20px rgba(59,130,246,.3); }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+  .btn-secondary:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  /* room code input uppercase */
+  #joinCode { text-transform: uppercase; letter-spacing: .15em; font-weight: 600; }
+
+  /* ─── Toast ─── */
+  #toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(4rem);
+    background: #ef4444; color: #fff; padding: .75rem 1.5rem; border-radius: 10px;
+    font-size: .875rem; font-weight: 500; transition: transform .3s;
+    z-index: 999;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); }
+
+  .divider { display: flex; align-items: center; gap: .75rem; color: var(--muted); font-size: .8rem; margin: .5rem 0; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="logo">
+    <div class="logo-mark">
+      <span class="logo-icon">🌐</span>
+      Vaani
+    </div>
+    <div class="logo-sub">Real-Time AI Translation · Indian Languages</div>
+  </div>
+
+  <div class="cards">
+
+    <!-- SPEAKER CARD -->
+    <div class="card">
+      <div class="card-icon">🎙️</div>
+      <div class="card-title">Start as Speaker</div>
+      <div class="card-desc">Create a room, speak in your language, and your audience hears you in theirs — live.</div>
+      <div class="input-group">
+        <div class="select-wrap">
+          <select id="speakerLang">
+            <option value="hi-IN">Hindi — हिंदी</option>
+            <option value="en-IN" selected>English</option>
+            <option value="ta-IN">Tamil — தமிழ்</option>
+            <option value="te-IN">Telugu — తెలుగు</option>
+            <option value="kn-IN">Kannada — ಕನ್ನಡ</option>
+            <option value="bn-IN">Bengali — বাংলা</option>
+            <option value="mr-IN">Marathi — मराठी</option>
+            <option value="gu-IN">Gujarati — ગુજરાતી</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="createRoom()">Create Room →</button>
+      </div>
+    </div>
+
+    <!-- LISTENER CARD -->
+    <div class="card">
+      <div class="card-icon">🎧</div>
+      <div class="card-title">Join as Listener</div>
+      <div class="card-desc">Enter a room code and choose your language — receive live translated audio in real time.</div>
+      <div class="input-group">
+        <input type="text" id="joinCode" placeholder="ROOM CODE" maxlength="6" />
+        <div class="divider">choose your language</div>
+        <div class="select-wrap">
+          <select id="listenerLang">
+            <option value="hi-IN">Hindi — हिंदी</option>
+            <option value="en-IN">English</option>
+            <option value="ta-IN">Tamil — தமிழ்</option>
+            <option value="te-IN">Telugu — తెలుగు</option>
+            <option value="kn-IN">Kannada — ಕನ್ನಡ</option>
+            <option value="bn-IN">Bengali — বাংলা</option>
+            <option value="mr-IN">Marathi — मराठी</option>
+            <option value="gu-IN">Gujarati — ગુજరాતી</option>
+          </select>
+        </div>
+        <button class="btn btn-secondary" onclick="joinRoom()">Join Room →</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  async function createRoom() {
+    const lang = document.getElementById('speakerLang').value;
+    try {
+      const res = await fetch('/api/create-room');
+      const data = await res.json();
+      window.location.href = `/speaker?room=${data.room_id}&lang=${lang}`;
+    } catch {
+      showToast('Failed to create room. Is the server running?');
+    }
+  }
+
+  function joinRoom() {
+    const code = document.getElementById('joinCode').value.trim().toUpperCase();
+    const lang = document.getElementById('listenerLang').value;
+    if (code.length !== 6) { showToast('Enter a valid 6-character room code'); return; }
+    window.location.href = `/listener?room=${code}&lang=${lang}`;
+  }
+
+  document.getElementById('joinCode').addEventListener('keydown', e => {
+    if (e.key === 'Enter') joinRoom();
+  });
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
+  }
+</script>
+</body>
+</html>
