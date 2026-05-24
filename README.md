@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Vaani
 
 Real-time multilingual live translation for one speaker and many listeners.
@@ -169,3 +170,15 @@ http://localhost:8000
 ## License
 
 This project is provided for assessment, experimentation, and learning.
+=======
+---
+title: Live Translation
+emoji: 🐨
+colorFrom: red
+colorTo: green
+sdk: docker
+pinned: false
+---
+
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
+>>>>>>> a27a45c4e75b082d845efcc16ed663b86072ef51
